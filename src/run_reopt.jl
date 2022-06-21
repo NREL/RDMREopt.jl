@@ -43,10 +43,12 @@ Run REopt.simulate_outages and add "probability_of_survival_N_time_steps" to res
 function add_outage_sim_results!(sim_results::AbstractVector, s::Scenarios, r::Dict, 
     p::REopt.REoptInputs, i::Int
     )
-    sim_results[i] = REopt.simulate_outages(r, p; microgrid_only=true)
-    for m in filter(m -> startswith(m, "probability_of_survival_"), s.metrics)
-        N = parse(Int, m[25:findall("_", m)[4][1]-1])
-        add_prob_of_survival_for_N_time_steps!(N, r, sim_results[i])
+    if r["status"] == "optimal"
+        sim_results[i] = REopt.simulate_outages(r, p; microgrid_only=true)
+        for m in filter(m -> startswith(m, "probability_of_survival_"), s.metrics)
+            N = parse(Int, m[25:findall("_", m)[4][1]-1])
+            add_prob_of_survival_for_N_time_steps!(N, r, sim_results[i])
+        end
     end
     nothing
 end
@@ -74,7 +76,12 @@ function run_serial_scenarios(s::Scenarios, optimizer; remove_series=false, opti
             JuMP.set_optimizer_attribute(m, k, v)
         end
         r = REopt.run_reopt(m, p)
-        if  any(startswith(m, "probability_of_survival") for m in s.metrics)
+        if typeof(r) == JuMP.Model  # run_reopt returns the Model if not optimal status
+            r = Dict{Any, Any}(
+                "status" => string(JuMP.termination_status(r))
+            )
+        end
+        if any(startswith(m, "probability_of_survival") for m in s.metrics)
             add_outage_sim_results!(sim_results, s, r, p, i)
         end
         if remove_series
@@ -141,7 +148,12 @@ function run_threaded_scenarios(s::Scenarios, optimizer; remove_series=false, op
                 JuMP.set_optimizer_attribute(m, k, v)
             end
             r = REopt.run_reopt(m, p)
-            if  any(startswith(m, "probability_of_survival") for m in s.metrics)
+            if typeof(r) == JuMP.Model  # run_reopt returns the Model if not optimal status
+                r = Dict{Any, Any}(
+                    "status" => string(JuMP.termination_status(r))
+                )
+            end
+            if any(startswith(m, "probability_of_survival") for m in s.metrics)
                 add_outage_sim_results!(sim_results, s, r, p, i)
             end
             if remove_series # must be done after add_outage_sim_results! b/c need time series for outage sim
