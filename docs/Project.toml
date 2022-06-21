@@ -1,0 +1,7 @@
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterLaTeX = "cd674d7a-5f81-5cf3-af33-235ef1834b99"
+LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
+RDMREopt = "3f97089f-1c6f-4fad-8772-aee14d889bd8"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
