@@ -1,7 +1,7 @@
 using RDMREopt
 using Distributions
 using Test
-using Xpress
+using SCIP
 
 
 @testset "threaded_scenarios" begin
@@ -44,23 +44,18 @@ using Xpress
         Nparallel=6
     );
 
-    rs, outage_sim_results = RDMREopt.run_threaded_scenarios(scenarios, Xpress.Optimizer; remove_series=true);
+    rs, outage_sim_results = RDMREopt.run_threaded_scenarios(scenarios, SCIP.Optimizer; 
+        remove_series=true, 
+        optimizer_settings=Dict(
+            "limits/gap" => 0.05,
+            "display/verblevel" => 0
+        )
+    );
 
     df = dicts_to_dataframe(rs)
     save_dataframe_as_csv(df, "results.csv")
     save_opt_and_outage_sim_results_as_json("results.json", rs, outage_sim_results)
 
-    #=
-    Memory notes:
-    With 10 scenarios and remove_series=true
-        rs 50.334 KiB
-    With 10 scenarios and remove_series=false
-        rs 
-    =#
-
-    #= TODO
-    plot metrics and uncertainties?
-    =#
 end
 
 
@@ -93,7 +88,13 @@ end
         Nparallel=6
     );
 
-    results, outage_sim_results = RDMREopt.run_serial_scenarios(scenarios, Xpress.Optimizer; remove_series=true);
+    results, outage_sim_results = RDMREopt.run_serial_scenarios(scenarios, SCIP.Optimizer; 
+        remove_series=true, 
+        optimizer_settings=Dict(
+            "limits/gap" => 0.05,
+            "display/verblevel" => 0
+        )
+    );
 
     df = dicts_to_dataframe(results)
     save_dataframe_as_csv(df, "results.csv")
