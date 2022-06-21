@@ -60,7 +60,7 @@ Run the REopt scenarios one at a time in for loop and return a vector of diction
 If `remove_series` is `true` then all time series results are removed from the dictionaries,
 which will keep memory use lower and make the results compatible with rectangular data stores.
 """
-function run_serial_scenarios(s::Scenarios, optimizer; remove_series=false)
+function run_serial_scenarios(s::Scenarios, optimizer; remove_series=false, optimizer_settings::Dict=Dict())
     rs = [Dict() for i = 1:s.Nscenarios]
     sim_results = nothing
     if any(startswith(m, "probability_of_survival") for m in s.metrics)
@@ -69,7 +69,11 @@ function run_serial_scenarios(s::Scenarios, optimizer; remove_series=false)
 
     for (i,d) in enumerate(s.generator)
         p = REopt.REoptInputs(REopt.Scenario(d))
-        r = REopt.run_reopt(JuMP.Model(optimizer), p)
+        m = JuMP.Model(optimizer) 
+        for (k,v) in optimizer_settings
+            JuMP.set_optimizer_attribute(m, k, v)
+        end
+        r = REopt.run_reopt(m, p)
         if  any(startswith(m, "probability_of_survival") for m in s.metrics)
             add_outage_sim_results!(sim_results, s, r, p, i)
         end
@@ -92,7 +96,7 @@ vector of dictionaries for results.
 If `remove_series` is `true` then all time series results are removed from the dictionaries,
 which will keep memory use lower and make the results compatible with rectangular data stores.
 """
-function run_threaded_scenarios(s::Scenarios, optimizer; remove_series=false)
+function run_threaded_scenarios(s::Scenarios, optimizer; remove_series=false, optimizer_settings::Dict=Dict())
     rs = [Dict() for i = 1:s.Nscenarios]
     sim_results = nothing
     if any(startswith(m, "probability_of_survival") for m in s.metrics)
@@ -132,7 +136,11 @@ function run_threaded_scenarios(s::Scenarios, optimizer; remove_series=false)
             d = iterate(s.generator, i-1)[1]  # iterate returns a tuple (nextitem, state)
             # create REoptInputs for simulate_outages (o.w. will get done twice)
             p = REopt.REoptInputs(REopt.Scenario(d))
-            r = REopt.run_reopt(JuMP.Model(optimizer), p)
+            m = JuMP.Model(optimizer) 
+            for (k,v) in optimizer_settings
+                JuMP.set_optimizer_attribute(m, k, v)
+            end
+            r = REopt.run_reopt(m, p)
             if  any(startswith(m, "probability_of_survival") for m in s.metrics)
                 add_outage_sim_results!(sim_results, s, r, p, i)
             end
